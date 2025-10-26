@@ -1,0 +1,8 @@
+database: 'sqlite:///home/jean/Desktop/fini/fini.sqlite3'
+application:
+  data_path: '/home/jean/Dropbox/fini/data'
+  return_years: # The years for which to display return rates
+    - 2024
+    - 2023
+    - 2022
+    - 2021
