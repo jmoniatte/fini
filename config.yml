@@ -1,8 +1,33 @@
-database: 'sqlite:///home/jean/Desktop/fini/fini.sqlite3'
-application:
-  data_path: '/home/jean/Dropbox/fini/data'
-  return_years: # The years for which to display return rates
-    - 2024
-    - 2023
-    - 2022
-    - 2021
+# Default configuration for Fini
+# Users can override these values in ~/.config/fini/config.yml
+
+database: 'sqlite://~/.config/fini/fini.sqlite3'
+
+# Inference rules for action and project
+infer_rules:
+  action:
+    meet:
+      - '^Met\b'
+    plan:
+      - '\bsprint\b'
+    code:
+      - '^PR'
+      - '^Worked'
+    review:
+      - '\breviewed PR\b'
+  project:
+    events:
+      - '\bevent\b'
+      - '\bevents\b'
+    ops:
+      - '\[ops-request\]'
+    collections:
+      - '\bcollection\b'
+    rails:
+      - '\bsprint\b'
+    developers:
+      - '\bdevelopers\b'
+    bugs:
+      - '\bissue\b'
+    rwgps:
+      - '\ball( |-)staff\b'

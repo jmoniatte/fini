@@ -3,9 +3,10 @@ Sequel.migration do
     create_table :logs do
       primary_key :id
       String :message
+      DateTime :done_at
       String :text
       String :action
-      String :tag
+      String :project
       Integer :duration
       DateTime :created_at
     end

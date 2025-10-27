@@ -18,13 +18,13 @@ module Fini
         end
 
         # Parse and store the log message
-        result = Fini::LogHandler.create(full_message)
+        log = Fini::LogHandler.create(full_message)
 
-        say("✓ Log recorded (ID: #{result[:log_id]})".green)
-        say("  Text: #{result[:text]}")
-        say("  Activity: #{result[:activity]}") if result[:activity]
-        say("  Duration: #{result[:duration]} minutes") if result[:duration]
-        say("  Scope: ##{result[:scope]}") if result[:scope]
+        say("✓ Log recorded (ID: #{log.id})".green)
+        say("  Text: #{log.text}")
+        say("  Action: #{log.action}") if log.action
+        say("  Duration: #{log.duration} minutes") if log.duration
+        say("  Project: #{log.project}") if log.project
       end
 
       # Catch unknown commands and treat them as log messages

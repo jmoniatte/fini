@@ -7,7 +7,11 @@ require 'terminal-table'
 require 'colorize'
 
 ROOT_PATH = File.expand_path('..', File.dirname(__FILE__))
-CONFIG = YAML.safe_load(File.read(File.join(ROOT_PATH, 'config.yml')))
+
+# Load configuration module
+require_relative 'fini/config'
+
+CONFIG = Fini::Config.load
 
 # Establish Sequel database connection
 DB = Sequel.connect(CONFIG['database'])
