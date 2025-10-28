@@ -2,4 +2,4 @@
 
 require_relative '../lib/fini'
 
-Fini::CLI::Root.start(ARGV)
+Fini::CLI.new(ARGV).run

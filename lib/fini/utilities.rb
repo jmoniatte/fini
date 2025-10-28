@@ -6,4 +6,19 @@ module Utilities
 
     [remaining&.strip, extracted&.strip]
   end
+
+  def self.duration_string(minutes)
+    return "0m" if minutes.to_i == 0
+
+    hours = minutes / 60
+    mins = minutes % 60
+
+    if hours > 0 && mins > 0
+      format("%<hours>dh%<mins>02d", hours: hours, mins: mins)
+    elsif hours > 0
+      "#{hours}h"
+    else
+      "#{mins}m"
+    end
+  end
 end

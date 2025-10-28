@@ -12,7 +12,9 @@ infer_rules:
       - '\bsprint\b'
     code:
       - '^PR'
+      - '^Updated PR'
       - '^Worked'
+      - '^Refactored'
     review:
       - '\breviewed PR\b'
   project:
@@ -31,3 +33,7 @@ infer_rules:
       - '\bissue\b'
     rwgps:
       - '\ball( |-)staff\b'
+    mobile:
+      - '\bandroid\b'
+      - '\bios\b'
+      - '\bApple JWT\b'

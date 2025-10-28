@@ -29,4 +29,4 @@ require_relative 'fini/models/log'
 
 # require_relative 'fini/views/account'
 
-require_relative 'fini/cli/root'
+require_relative 'fini/cli'

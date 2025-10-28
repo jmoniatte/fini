@@ -17,6 +17,7 @@ class Log < Sequel::Model
     end
 
     def self.parse_duration(message)
+      # TODO: needs to also parse 1h30
       pattern = /@\d+\.?\d*[mh]$/ # @90m @1.5h at the end of message
       text, duration = Utilities.extract_substring(message, pattern)
 
@@ -57,7 +58,7 @@ class Log < Sequel::Model
       [message, infer_attribute("project", message)]
     end
 
-    # Fallback to attribute inference from keywords in message
+    # Fallback to attribute inference from configuration
     def self.infer_attribute(attribute, message)
       rules = CONFIG['infer_rules'][attribute] || {}
       rules.each do |key, patterns|
