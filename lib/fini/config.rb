@@ -1,43 +1,40 @@
 module Fini
   module Config
+    DEFAULT_CONFIG_PATH = File.expand_path('~/.config/fini/config.yml')
+
     # Load configuration with user overrides
-    def self.load
-      # Ensure config directory exists
-      config_dir = File.expand_path('~/.config/fini')
-      Dir.mkdir(config_dir) unless Dir.exist?(config_dir)
-
-      # Load default config from gem
+    # Accepts optional config_path for custom config file location
+    def self.load(config_path = nil)
+      # Default config from project root
       default_config_path = File.join(ROOT_PATH, 'config.yml')
-      default_config = YAML.safe_load(File.read(default_config_path))
 
-      # Load user config if it exists
-      user_config_path = File.join(config_dir, 'config.yml')
-      user_config = if File.exist?(user_config_path)
-                      YAML.safe_load(File.read(user_config_path)) || {}
-                    else
-                      {}
-                    end
+      # Determine which config file to use
+      if config_path
+        # Custom config path provided via -c flag
+        user_config_path = File.expand_path(config_path)
+      else
+        # Default user config location
+        user_config_path = DEFAULT_CONFIG_PATH
+        config_dir = File.dirname(user_config_path)
 
-      # Merge user config over default config (deep merge for nested hashes)
-      merged_config = deep_merge(default_config, user_config)
+        # Ensure default config directory exists
+        Dir.mkdir(config_dir) unless Dir.exist?(config_dir)
 
-      # Expand ~ in database path
-      if merged_config['database']
-        merged_config['database'] = merged_config['database'].gsub('~', Dir.home)
-      end
-
-      merged_config
-    end
-
-    # Deep merge two hashes
-    def self.deep_merge(base, override)
-      base.merge(override) do |_key, base_val, override_val|
-        if base_val.is_a?(Hash) && override_val.is_a?(Hash)
-          deep_merge(base_val, override_val)
-        else
-          override_val
+        # Copy default config to user config if it doesn't exist
+        unless File.exist?(user_config_path)
+          FileUtils.cp(default_config_path, user_config_path)
         end
       end
+
+      # Load the config file
+      config = YAML.safe_load(File.read(user_config_path))
+
+      # Expand ~ in database_path
+      if config['database_path']
+        config['database_path'] = config['database_path'].gsub('~', Dir.home)
+      end
+
+      config
     end
   end
 end

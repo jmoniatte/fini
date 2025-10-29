@@ -8,12 +8,29 @@ module Fini
       @days_count = 1
       @view_days = nil
       @message = nil
+      @config_path = nil
     end
 
     def run
       parse_options
       validate_options
-      execute_command
+
+      # Set config path before any commands execute (triggers lazy load)
+      Fini.config_path = @config_path if @config_path
+
+      begin
+        # Initialize database and run migrations (ensures tables exist)
+        Database::Setup.auto_setup
+
+        # Now load models and handlers that depend on database
+        require_relative 'models/log'
+        require_relative 'log_handler'
+
+        execute_command
+      rescue Fini::ConfigurationError => e
+        puts "Configuration Error: #{e.message}".red
+        exit 1
+      end
     end
 
     private
@@ -23,6 +40,10 @@ module Fini
         opts.banner = "Usage: fini [options] [message]"
         opts.separator ""
         opts.separator "Options:"
+
+        opts.on("-c", "--config PATH", "Path to custom config file (default: ~/.config/fini/config.yml)") do |path|
+          @config_path = path
+        end
 
         opts.on("-e", "--edit [DAYS]", Integer, "Edit logs for last N days (default: 1)") do |days|
           @mode = :edit

@@ -1,7 +1,7 @@
 # Default configuration for Fini
 # Users can override these values in ~/.config/fini/config.yml
 
-database: 'sqlite://~/.config/fini/fini.sqlite3'
+database_path: '~/.config/fini/fini.sqlite3'
 
 # Inference rules for action and project
 infer_rules:
