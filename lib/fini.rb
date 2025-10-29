@@ -4,7 +4,7 @@ require 'date'
 
 require 'sequel'
 require 'terminal-table'
-require 'colorize'
+require_relative 'fini/ansi_colors'
 
 ROOT_PATH = File.expand_path('..', File.dirname(__FILE__))
 

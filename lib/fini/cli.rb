@@ -5,8 +5,8 @@ module Fini
     def initialize(args)
       @args = args
       @mode = :default
-      @edit = false
       @days_count = 1
+      @view_days = nil
       @message = nil
     end
 
@@ -25,8 +25,13 @@ module Fini
         opts.separator "Options:"
 
         opts.on("-e", "--edit [DAYS]", Integer, "Edit logs for last N days (default: 1)") do |days|
-          @edit = true
+          @mode = :edit
           @days_count = days || 1
+        end
+
+        opts.on("-v", "--view DAYS", Integer, "View logs for last N days (default: 1)") do |days|
+          @mode = :view
+          @view_days = days || 1
         end
 
         opts.on("-h", "--help", "Show this help message") do
@@ -39,7 +44,8 @@ module Fini
 
         opts.separator ""
         opts.separator "Commands:"
-        opts.separator "    fini                              Show today's logs"
+        opts.separator "    fini                              View today's logs"
+        opts.separator "    fini -v 7                         View last 7 days' logs"
         opts.separator "    fini -e                           Edit today's logs"
         opts.separator "    fini -e 3                         Edit last 3 days' logs"
         opts.separator "    fini your message @2h @project    Log a message with duration and project"
@@ -71,11 +77,16 @@ module Fini
     end
 
     def execute_command
+      system("clear") unless @mode == :help
       case @mode
       when :help
         puts create_option_parser.help
       when :reset
         reset_command
+      when :edit
+        edit_command
+      when :view
+        view_command
       when :default
         default_command
       end
@@ -85,15 +96,22 @@ module Fini
       if @message && !@message.empty?
         # Log a message
         Fini::LogHandler.create(@message)
-      elsif @edit
-        # Edit logs for date range
-        start_date = Date.today
-        end_date = Date.today - (@days_count - 1)
-        Fini::LogHandler.edit_days(start_date, end_date)
       else
         # Show today's logs
-        Fini::LogHandler.show_day
+        Fini::LogHandler.view_days(Date.today)
       end
+    end
+
+    def view_command
+      start_date = Date.today
+      end_date = Date.today - (@view_days - 1)
+      Fini::LogHandler.view_days(start_date, end_date)
+    end
+
+    def edit_command
+      start_date = Date.today
+      end_date = Date.today - (@days_count - 1)
+      Fini::LogHandler.edit_days(start_date, end_date)
     end
 
     def reset_command

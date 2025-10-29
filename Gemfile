@@ -1,6 +1,5 @@
 source 'https://rubygems.org'
 
-gem "colorize", "~> 1.1"
 gem "rake", "~> 13.1"
 gem "sequel", "~> 5.86"
 gem "sqlite3", "~> 1.7"

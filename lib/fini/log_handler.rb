@@ -4,37 +4,41 @@ module Fini
     # Example: "Worked on project two @2h #backend"
     def self.create(message)
       log = Log.create_from_message(message)
-
-      puts "✓ Log recorded (ID: #{log.id})".green
-      puts "  Text: #{log.text}"
-      puts "  Action: #{log.action}" if log.action
-      puts "  Duration: #{log.duration} minutes" if log.duration
-      puts "  Project: #{log.project}" if log.project
-
+      view_days(log.logged_at.to_date)
       log
     end
 
-    def self.show_day(day: Time.now.to_date)
-      range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
-      logs = Log.where(logged_at: range)
-      day_duration = logs.map(&:duration).compact.sum
+    def self.view_days(start_date, end_date = nil)
+      end_date ||= start_date
+      start_date, end_date = end_date, start_date if start_date < end_date
 
-      puts [
-        "#{day} - #{day.strftime('%A')}".red,
-        Utilities.duration_string(day_duration).cyan
-      ].join(" ")
+      start_date.downto(end_date).each do |day|
+        range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
+        logs = Log.where(logged_at: range)
 
-      logs.each do |log|
-        parts = [
-          "*",
-          log.logged_at.strftime("%H:%M"),
-          "-",
-          log.text.bold
-        ]
-        parts << Utilities.duration_string(log.duration).cyan
-        parts << "@#{log.project}".italic unless log.project.nil?
-        parts << "+#{log.action}".italic unless log.action.nil?
-        puts parts.compact.join(" ")
+        # Skip days with no entries
+        next if logs.empty?
+
+        day_duration = logs.map(&:duration).compact.sum
+
+        puts [
+          "#{day} - #{day.strftime('%A')}".red,
+          Utilities.duration_string(day_duration).cyan
+        ].join(" ")
+
+        logs.each do |log|
+          parts = [
+            "*",
+            log.logged_at.strftime("%H:%M"),
+            "-",
+            log.text.bold
+          ]
+          parts << Utilities.duration_string(log.duration).cyan unless log.duration.nil?
+          parts << "@#{log.project}".grey.italic unless log.project.nil?
+          parts << "+#{log.action}".grey.italic unless log.action.nil?
+          puts parts.compact.join(" ")
+        end
+        puts ""
       end
     end
 
@@ -117,14 +121,10 @@ module Fini
       tempfile.unlink
 
       # Show updated logs for the date range
+      view_days(start_date, end_date)
       if start_date == end_date
-        show_day(day: start_date)
         puts "✓ Logs updated for #{start_date}".green
       else
-        start_date.downto(end_date).each do |day|
-          puts ""
-          show_day(day: day)
-        end
         puts "✓ Logs updated for #{end_date} to #{start_date}".green
       end
     end
