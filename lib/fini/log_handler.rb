@@ -38,23 +38,30 @@ module Fini
       end
     end
 
-    # WIP: extend to support multiple days (saving from tempfile lready does it)
-    def self.edit_day(day: Time.now.to_date)
+    def self.edit_days(start_date, end_date = nil)
       require 'tempfile'
 
-      range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
-      logs = Log.where(logged_at: range).order(:logged_at)
+      end_date ||= start_date
+      start_date, end_date = end_date, start_date if start_date < end_date
 
       tempfile = Tempfile.new(['fini-edit-', '.md'])
-      tempfile.puts "# #{day} - #{day.strftime('%A')}"
-      logs.each do |log|
-        parts = [
-          "*",
-          log.logged_at.strftime("%H:%M"),
-          "-",
-          log.message
-        ]
-        tempfile.puts parts.join(" ")
+
+      # Generate sections for each day (newest first)
+      start_date.downto(end_date).each do |day|
+        range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
+        logs = Log.where(logged_at: range).order(:logged_at)
+
+        tempfile.puts "# #{day} - #{day.strftime('%A')}"
+        logs.each do |log|
+          parts = [
+            "*",
+            log.logged_at.strftime("%H:%M"),
+            "-",
+            log.message
+          ]
+          tempfile.puts parts.join(" ")
+        end
+        tempfile.puts "" # Empty line between days
       end
 
       tempfile.close
@@ -109,8 +116,17 @@ module Fini
 
       tempfile.unlink
 
-      show_day(day: day)
-      puts "✓ Logs updated for #{day}".green
+      # Show updated logs for the date range
+      if start_date == end_date
+        show_day(day: start_date)
+        puts "✓ Logs updated for #{start_date}".green
+      else
+        start_date.downto(end_date).each do |day|
+          puts ""
+          show_day(day: day)
+        end
+        puts "✓ Logs updated for #{end_date} to #{start_date}".green
+      end
     end
   end
 end
