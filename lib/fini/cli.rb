@@ -39,11 +39,12 @@ module Fini
         opts.separator "Commands:"
         opts.separator "    fini                              Show today's logs"
         opts.separator "    fini -e                           Edit today's logs"
-        opts.separator "    fini your message @2h #project    Log a message with duration and project"
+        opts.separator "    fini your message @2h @project    Log a message with duration and project"
         opts.separator ""
         opts.separator "Message format:"
-        opts.separator "    @<duration>   Duration (e.g., @2h, @30m, @1.5hours)"
-        opts.separator "    #<project>    Project tag (e.g., #backend)"
+        opts.separator "    @<duration>   Duration (examples: @30m, @1h, @1.5h, @1h45)"
+        opts.separator "    @<project>    Project tag (examples: @backend, @front-end)"
+        opts.separator "    +<action>     Action specifier (examples: +meeting, +code)"
         opts.separator "    action words: meeting, coding, writing, research, etc."
       end
     end

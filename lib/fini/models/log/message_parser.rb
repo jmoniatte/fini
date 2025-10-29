@@ -17,24 +17,21 @@ class Log < Sequel::Model
     end
 
     def self.parse_duration(message)
-      # TODO: needs to also parse 1h30
-      pattern = /@\d+\.?\d*[mh]$/ # @90m @1.5h at the end of message
+      # Matches: @30m, @2h, @1.5h, @1h30, @1h30m (anywhere in string)
+      # Order matters: try combined format first, then simple format
+      pattern = /@(?:\d+h\d+m?|\d+\.?\d*[hm])/
       text, duration = Utilities.extract_substring(message, pattern)
 
-      match = duration&.strip&.match(/^@([\d.]+)([mh])$/)
-      return [text, 0] unless match
+      return [text, nil] unless duration
 
-      value = match[1].to_f
-      unit = match[2]
-      minutes = case unit
-                when 'm'
-                  value.to_i
-                when 'h'
-                  (value * 60).to_i
-                else
-                  0
-                end
-      [text, minutes]
+      match = duration.strip.match(/^@(?:(\d+\.?\d*)h)?(\d+)?m?$/)
+      return [text, nil] unless match
+
+      hours = match[1]&.to_f || 0
+      mins = match[2].to_i || 0
+
+      total_minutes = (hours * 60).to_i + mins
+      [text, total_minutes]
     end
 
     def self.parse_action(message)
