@@ -2,57 +2,86 @@ require_relative '../../utilities'
 
 class Log < Sequel::Model
   module MessageParser
+    DURATION_PATTERN = /@(?:\d+h\d+m?|\d+\.?\d*[hm])/.freeze
+    DURATION_AT_END_PATTERN = /#{DURATION_PATTERN.source}$/.freeze
+
+    ACTION_PATTERN = /\+[A-Za-z]+/.freeze
+    ACTION_AT_END_PATTERN = /#{ACTION_PATTERN.source}$/.freeze
+
+    PROJECT_PATTERN = /@[A-Za-z0-9_-]+/.freeze
+
     # Parses and extracts attributes from message
+    # Two-phase approach: extract suffix first, then inline
+    # Project is always kept in text (only prefix stripped)
     def self.parse(message)
-      text, duration = parse_duration(message)
-      text, action = parse_action(text)
-      text, project = parse_project(text)
+      text = message.dup
+
+      # Extract suffix first (remove completely)
+      text, duration = extract_suffix(text, DURATION_AT_END_PATTERN) do |match|
+        parse_duration_value(match)
+      end
+
+      text, action = extract_suffix(text, ACTION_AT_END_PATTERN) do |match|
+        match.delete('+')
+      end
+
+      # If not found as suffix, extract inline (keep in text without prefix)
+      unless duration
+        text, duration = extract_inline(text, DURATION_PATTERN) do |match|
+          parse_duration_value(match)
+        end
+      end
+      unless action
+        text, action = extract_inline(text, ACTION_PATTERN) do |match|
+          match.delete('+')
+        end
+      end
+
+      # Project is always extracted inline (always kept in text without @)
+      text, project = extract_inline(text, PROJECT_PATTERN) { |m| m.delete('@') }
+
+      # Fallback to inference
+      action ||= infer_attribute("action", message)
+      project ||= infer_attribute("project", message)
 
       {
-        text: text,
+        text: text.strip,
         duration: duration,
         action: action,
         project: project
       }
     end
 
-    def self.parse_duration(message)
-      # Matches: @30m, @2h, @1.5h, @1h30, @1h30m (anywhere in string)
-      # Order matters: try combined format first, then simple format
-      pattern = /@(?:\d+h\d+m?|\d+\.?\d*[hm])/
-      text, duration = Utilities.extract_substring(message, pattern)
-
-      return [text, nil] unless duration
-
-      match = duration.strip.match(/^@(?:(\d+\.?\d*)h)?(\d+)?m?$/)
+    # Extract suffix: remove completely from end
+    def self.extract_suffix(text, pattern)
+      match = text.match(pattern)
       return [text, nil] unless match
+
+      value = yield(match[0])
+      new_text = text.sub(pattern, '').strip
+      [new_text, value]
+    end
+
+    # Extract inline: keep in text without prefix
+    def self.extract_inline(text, pattern)
+      match = text.match(pattern)
+      return [text, nil] unless match
+
+      value = yield(match[0])
+      without_prefix = match[0].delete('@+')
+      new_text = text.sub(match[0], without_prefix)
+      [new_text, value]
+    end
+
+    # Parse duration value from matched string
+    def self.parse_duration_value(duration_str)
+      match = duration_str.match(/^@?(?:(\d+\.?\d*)h)?(\d+)?m?$/)
+      return nil unless match
 
       hours = match[1]&.to_f || 0
       mins = match[2].to_i || 0
-
-      total_minutes = (hours * 60).to_i + mins
-      [text, total_minutes]
-    end
-
-    def self.parse_action(message)
-      pattern = /(^| )\+[A-Za-z]+/ # +code +meet
-      text, action = Utilities.extract_substring(message, pattern)
-      if action
-        action = action&.tr("+", "")
-        return [text, action]
-      end
-
-      [message, infer_attribute("action", message)]
-    end
-
-    def self.parse_project(message)
-      pattern = /(^| )@[A-Za-z0-9_-]*/ # @project-name
-      text, project = Utilities.extract_substring(message, pattern)
-      if project
-        project = project.tr("@ ", "")
-        return [text, project]
-      end
-      [message, infer_attribute("project", message)]
+      total = (hours * 60).to_i + mins
+      total > 0 ? total : nil
     end
 
     # Fallback to attribute inference from configuration
