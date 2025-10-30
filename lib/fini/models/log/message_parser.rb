@@ -1,4 +1,4 @@
-require_relative '../../utilities'
+require_relative '../../helpers/utilities'
 
 class Log < Sequel::Model
   module MessageParser

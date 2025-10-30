@@ -15,16 +15,21 @@ module Fini
       parse_options
       validate_options
 
-      # Set config path before any commands execute (triggers lazy load)
-      Fini.config_path = @config_path if @config_path
+      begin
+        # Setup configuration
+        Fini::Config.auto_setup(@config_path)
+      rescue Fini::ConfigurationError => e
+        puts "Configuration Error: #{e.message}".red
+        exit 1
+      end
 
       begin
-        # Initialize database and run migrations (ensures tables exist)
-        Database::Setup.auto_setup
+        # Initialize database connection (runs migrations automatically)
+        Fini::Database.connection
 
-        # Now load models and handlers that depend on database
+        # Load models and handlers
         require_relative 'models/log'
-        require_relative 'log_handler'
+        require_relative 'handlers/log_handler'
 
         execute_command
       rescue Fini::ConfigurationError => e
@@ -98,7 +103,7 @@ module Fini
     end
 
     def execute_command
-      system("clear") unless @mode == :help
+      # system("clear") unless @mode == :help
       case @mode
       when :help
         puts create_option_parser.help
@@ -142,7 +147,7 @@ module Fini
 
       if confirmation.downcase == 'yes'
         puts "\nResetting database...".yellow
-        Database::Setup.reset
+        Fini::Database.reset
         puts "Database reset complete".green
       else
         puts "Database reset cancelled".yellow

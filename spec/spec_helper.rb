@@ -13,6 +13,14 @@
 # it.
 #
 # See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+
+# Initialize Fini for testing
+require_relative '../lib/fini'
+
+# Setup config and initialize database connection (runs migrations automatically)
+Fini::Config.auto_setup
+Fini::Database.connection
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
