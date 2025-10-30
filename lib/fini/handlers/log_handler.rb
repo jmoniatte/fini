@@ -1,7 +1,7 @@
 module Fini
   class LogHandler
     # Creates a log from a message string
-    # Example: "Worked on project two @2h #backend"
+    # Example: "Worked on task @2h @backend"
     def self.create(message)
       log = Log.create_from_message(message)
       view_days(log.logged_at.to_date)
@@ -34,7 +34,7 @@ module Fini
             log.text.bold
           ]
           parts << Utilities.duration_string(log.duration).cyan unless log.duration.nil?
-          parts << "@#{log.project}".grey.italic unless log.project.nil?
+          parts << "@#{log.context}".grey.italic unless log.context.nil?
           parts << "+#{log.action}".grey.italic unless log.action.nil?
           puts parts.compact.join(" ")
         end

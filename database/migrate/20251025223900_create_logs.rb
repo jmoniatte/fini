@@ -6,7 +6,7 @@ Sequel.migration do
       DateTime :logged_at
       String :text
       String :action
-      String :project
+      String :context
       Integer :duration
       DateTime :created_at
     end

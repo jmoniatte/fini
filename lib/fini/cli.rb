@@ -73,11 +73,11 @@ module Fini
         opts.separator "    fini -v 7                         View last 7 days' logs"
         opts.separator "    fini -e                           Edit today's logs"
         opts.separator "    fini -e 3                         Edit last 3 days' logs"
-        opts.separator "    fini your message @2h @project    Log a message with duration and project"
+        opts.separator "    fini your message @2h @context    Log a message with duration and context"
         opts.separator ""
         opts.separator "Message format:"
         opts.separator "    @<duration>   Duration (examples: @30m, @1h, @1.5h, @1h45)"
-        opts.separator "    @<project>    Project tag (examples: @backend, @front-end)"
+        opts.separator "    @<context>    Context tag (examples: @backend, @front-end)"
         opts.separator "    +<action>     Action specifier (examples: +meeting, +code)"
         opts.separator "    action words: meeting, coding, writing, research, etc."
       end

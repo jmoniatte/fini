@@ -9,7 +9,7 @@ class Log < Sequel::Model
       message: message,
       text: parsed[:text],
       action: parsed[:action],
-      project: parsed[:project],
+      context: parsed[:context],
       duration: parsed[:duration],
       created_at: Time.now.floor(0)
     )

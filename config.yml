@@ -3,7 +3,7 @@
 
 database_path: '~/.config/fini/fini.sqlite3'
 
-# Inference rules for action and project
+# Inference rules for action and context
 infer_rules:
   action:
     meet:
@@ -17,7 +17,7 @@ infer_rules:
       - '^Refactored'
     review:
       - '\breviewed PR\b'
-  project:
+  context:
     events:
       - '\bevent\b'
       - '\bevents\b'

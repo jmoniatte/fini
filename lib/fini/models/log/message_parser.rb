@@ -8,11 +8,11 @@ class Log < Sequel::Model
     ACTION_PATTERN = /\+[A-Za-z]+/.freeze
     ACTION_AT_END_PATTERN = /#{ACTION_PATTERN.source}$/.freeze
 
-    PROJECT_PATTERN = /@[A-Za-z0-9_-]+/.freeze
+    CONTEXT_PATTERN = /@[A-Za-z0-9_-]+/.freeze
 
     # Parses and extracts attributes from message
     # Two-phase approach: extract suffix first, then inline
-    # Project is always kept in text (only prefix stripped)
+    # Context is always kept in text (only prefix stripped)
     def self.parse(message)
       text = message.dup
 
@@ -37,18 +37,18 @@ class Log < Sequel::Model
         end
       end
 
-      # Project is always extracted inline (always kept in text without @)
-      text, project = extract_inline(text, PROJECT_PATTERN) { |m| m.delete('@') }
+      # Context is always extracted inline (always kept in text without @)
+      text, context = extract_inline(text, CONTEXT_PATTERN) { |m| m.delete('@') }
 
       # Fallback to inference
       action ||= infer_attribute("action", message)
-      project ||= infer_attribute("project", message)
+      context ||= infer_attribute("context", message)
 
       {
         text: text.strip,
         duration: duration,
         action: action,
-        project: project
+        context: context
       }
     end
 
