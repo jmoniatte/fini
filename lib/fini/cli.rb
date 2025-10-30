@@ -6,7 +6,6 @@ module Fini
       @args = args
       @mode = :default
       @days_count = 1
-      @view_days = nil
       @message = nil
       @config_path = nil
     end
@@ -15,27 +14,27 @@ module Fini
       parse_options
       validate_options
 
+      # Setup configuration
       begin
-        # Setup configuration
-        Fini::Config.auto_setup(@config_path)
+        Fini::Configuration.auto_setup(@config_path)
       rescue Fini::ConfigurationError => e
         puts "Configuration Error: #{e.message}".red
         exit 1
       end
 
+      # Initialize database connection (runs migrations automatically)
       begin
-        # Initialize database connection (runs migrations automatically)
         Fini::Database.connection
-
-        # Load models and handlers
-        require_relative 'models/log'
-        require_relative 'handlers/log_handler'
-
-        execute_command
-      rescue Fini::ConfigurationError => e
-        puts "Configuration Error: #{e.message}".red
+      rescue Fini::DatabaseError => e
+        puts "Database Error: #{e.message}".red
         exit 1
       end
+
+      # Load models and handlers now that we have a database connection
+      require_relative 'models/log'
+      require_relative 'handlers/log_handler'
+
+      execute_command
     end
 
     private
@@ -57,7 +56,7 @@ module Fini
 
         opts.on("-v", "--view DAYS", Integer, "View logs for last N days (default: 1)") do |days|
           @mode = :view
-          @view_days = days || 1
+          @days_count = days || 1
         end
 
         opts.on("-h", "--help", "Show this help message") do
@@ -103,7 +102,7 @@ module Fini
     end
 
     def execute_command
-      # system("clear") unless @mode == :help
+      system("clear") unless @mode == :help
       case @mode
       when :help
         puts create_option_parser.help
@@ -130,7 +129,7 @@ module Fini
 
     def view_command
       start_date = Date.today
-      end_date = Date.today - (@view_days - 1)
+      end_date = Date.today - (@days_count - 1)
       Fini::LogHandler.view_days(start_date, end_date)
     end
 

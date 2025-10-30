@@ -18,7 +18,7 @@
 require_relative '../lib/fini'
 
 # Setup config and initialize database connection (runs migrations automatically)
-Fini::Config.auto_setup
+Fini::Configuration.auto_setup
 Fini::Database.connection
 
 RSpec.configure do |config|

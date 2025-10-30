@@ -1,4 +1,6 @@
 module Fini
+  class DatabaseError < StandardError; end
+
   module Database
     # Get or create database connection (singleton pattern)
     # Automatically runs pending migrations on first connection
@@ -6,18 +8,27 @@ module Fini
       @connection ||= begin
         db_path = Fini.config['database_path']
 
-        unless db_path
-          raise Fini::ConfigurationError, "Missing 'database_path' in configuration"
-        end
-
+        # Connect to database
         connection_string = "sqlite://#{db_path}"
-        db = Sequel.connect(connection_string)
+        begin
+          db = Sequel.connect(connection_string)
+        rescue Sequel::DatabaseConnectionError => e
+          raise Fini::DatabaseError, "Cannot connect to database at #{db_path}: #{e.message}"
+        rescue Sequel::DatabaseError => e
+          raise Fini::DatabaseError, "Database error: #{e.message}"
+        end
 
         # Set as default database for Sequel::Model
         Sequel::Model.db = db
 
         # Automatically run pending migrations
-        run_migrations(db)
+        begin
+          run_migrations(db)
+        rescue Sequel::Migrator::Error => e
+          raise Fini::DatabaseError, "Migration failed: #{e.message}"
+        rescue StandardError => e
+          raise Fini::DatabaseError, "Error running migrations: #{e.message}"
+        end
 
         db
       end

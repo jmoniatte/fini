@@ -1,7 +1,7 @@
 module Fini
   class ConfigurationError < StandardError; end
 
-  module Config
+  module Configuration
     DEFAULT_CONFIG_PATH = File.expand_path('~/.config/fini/config.yml')
 
     class << self
@@ -46,11 +46,39 @@ module Fini
       end
 
       # Expand ~ in database_path
-      if config['database_path']
-        config['database_path'] = config['database_path'].gsub('~', Dir.home)
-      end
+      config['database_path'] = config['database_path'].gsub('~', Dir.home)
+
+      # Validate database path
+      validate_database_path(config['database_path'])
 
       config
+    end
+
+    def self.validate_database_path(db_path)
+      # Check if path is actually a directory
+      if File.directory?(db_path)
+        raise Fini::ConfigurationError, "database_path points to a directory: #{db_path}"
+      end
+
+      db_dir = File.dirname(db_path)
+
+      # If directory exists, check permissions
+      if Dir.exist?(db_dir)
+        unless File.writable?(db_dir)
+          raise Fini::ConfigurationError, "No write permission for database directory: #{db_dir}"
+        end
+      else
+        # Try to create directory structure
+        begin
+          FileUtils.mkdir_p(db_dir)
+        rescue Errno::EACCES
+          raise Fini::ConfigurationError, "Cannot create database directory #{db_dir}: permission denied"
+        rescue Errno::EROFS
+          raise Fini::ConfigurationError, "Cannot create database directory #{db_dir}: read-only filesystem"
+        rescue SystemCallError => e
+          raise Fini::ConfigurationError, "Cannot create database directory #{db_dir}: #{e.message}"
+        end
+      end
     end
   end
 end
