@@ -17,7 +17,7 @@ require_relative 'fini/cli'
 module Fini
   class << self
     # Delegate to Configuration module
-    def config
+    def configuration
       Fini::Configuration.config
     end
   end

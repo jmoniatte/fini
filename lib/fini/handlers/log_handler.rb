@@ -34,8 +34,13 @@ module Fini
             log.text.bold
           ]
           parts << Utilities.duration_string(log.duration).cyan unless log.duration.nil?
-          parts << "@#{log.context}".grey.italic unless log.context.nil?
-          parts << "+#{log.action}".grey.italic unless log.action.nil?
+          meta_parts = []
+          meta_parts << "+#{log.action}" unless log.action.nil?
+          meta_parts << "@#{log.context}" unless log.context.nil?
+          unless meta_parts.empty?
+            meta_string = "[#{meta_parts.join(' ')}]"
+            parts << meta_string.grey.italic
+          end
           puts parts.compact.join(" ")
         end
         puts ""

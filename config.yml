@@ -1,39 +1,22 @@
-# Default configuration for Fini
-# Users can override these values in ~/.config/fini/config.yml
+# Default fini configuration file.
 
 database_path: '~/.config/fini/fini.sqlite3'
 
-# Inference rules for action and context
-infer_rules:
-  action:
+action:
+  default: 'code'
+  rules:
     meet:
       - '^Met\b'
-    plan:
-      - '\bsprint\b'
-    code:
-      - '^PR'
-      - '^Updated PR'
-      - '^Worked'
-      - '^Refactored'
-    review:
-      - '\breviewed PR\b'
-  context:
-    events:
-      - '\bevent\b'
-      - '\bevents\b'
-    ops:
-      - '\[ops-request\]'
-    collections:
-      - '\bcollection\b'
-    rails:
-      - '\bsprint\b'
-    developers:
-      - '\bdevelopers\b'
-    bugs:
-      - '\bissue\b'
-    rwgps:
-      - '\ball( |-)staff\b'
+    email:
+      - '\bEmailed\b'
+    admin:
+      - null
+context:
+  default: 'frontend'
+  rules:
+    backend:
+      - '\brails\b'
+      - '\bdjango\b'
     mobile:
       - '\bandroid\b'
       - '\bios\b'
-      - '\bApple JWT\b'

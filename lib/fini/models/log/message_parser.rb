@@ -86,13 +86,17 @@ class Log < Sequel::Model
 
     # Fallback to attribute inference from configuration
     def self.infer_attribute(attribute, message)
-      rules = Fini.config['infer_rules'][attribute] || {}
-      rules.each do |key, patterns|
-        patterns&.each do |pattern|
-          return key if message.match?(Regexp.new(pattern))
+      return nil unless (config_attribute = Fini.configuration[attribute])
+
+      if (rules = config_attribute["rules"])
+        rules.each do |key, patterns|
+          patterns&.each do |pattern|
+            next if pattern.nil?
+            return key if message.match?(Regexp.new(pattern))
+          end
         end
       end
-      nil
+      config_attribute["default"]
     end
   end
 end

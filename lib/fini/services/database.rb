@@ -6,7 +6,7 @@ module Fini
     # Automatically runs pending migrations on first connection
     def self.connection
       @connection ||= begin
-        db_path = Fini.config['database_path']
+        db_path = Fini.configuration['database_path']
 
         # Connect to database
         connection_string = "sqlite://#{db_path}"
