@@ -3,49 +3,29 @@ require_relative '../../helpers/utilities'
 class Log < Sequel::Model
   module MessageParser
     DURATION_PATTERN = /@(?:\d+h\d+m?|\d+\.?\d*[hm])/.freeze
-    DURATION_AT_END_PATTERN = /#{DURATION_PATTERN.source}$/.freeze
-
-    ACTION_PATTERN = /\+[A-Za-z]+/.freeze
-    ACTION_AT_END_PATTERN = /#{ACTION_PATTERN.source}$/.freeze
-
     CONTEXT_PATTERN = /@[A-Za-z0-9_-]+/.freeze
+    ACTION_PATTERN = /\+[A-Za-z]+/.freeze
 
     # Parses and extracts attributes from message
-    # Two-phase approach: extract suffix first, then inline
-    # Context is always kept in text (only prefix stripped)
+    # Two-phase approach: extract pattern first, fallback to rules
     def self.parse(message)
       text = message.dup
-
-      # Extract suffix first (remove completely)
-      text, duration = extract_suffix(text, DURATION_AT_END_PATTERN) do |match|
+      text, duration = extract_pattern(text, DURATION_PATTERN) do |match|
         parse_duration_value(match)
       end
-
-      text, action = extract_suffix(text, ACTION_AT_END_PATTERN) do |match|
+      text, context = extract_pattern(text, CONTEXT_PATTERN) do |match|
+        match.delete('@')
+      end
+      text, action = extract_pattern(text, ACTION_PATTERN) do |match|
         match.delete('+')
       end
-
-      # If not found as suffix, extract inline (keep in text without prefix)
-      unless duration
-        text, duration = extract_inline(text, DURATION_PATTERN) do |match|
-          parse_duration_value(match)
-        end
-      end
-      unless action
-        text, action = extract_inline(text, ACTION_PATTERN) do |match|
-          match.delete('+')
-        end
-      end
-
-      # Context is always extracted inline (always kept in text without @)
-      text, context = extract_inline(text, CONTEXT_PATTERN) { |m| m.delete('@') }
 
       # Fallback to inference
       action ||= infer_attribute("action", message)
       context ||= infer_attribute("context", message)
 
       {
-        text: text.strip,
+        text: text.gsub(/\s{2,}/, ' ').strip,
         duration: duration,
         action: action,
         context: context
@@ -53,23 +33,12 @@ class Log < Sequel::Model
     end
 
     # Extract suffix: remove completely from end
-    def self.extract_suffix(text, pattern)
+    def self.extract_pattern(text, pattern)
       match = text.match(pattern)
       return [text, nil] unless match
 
       value = yield(match[0])
       new_text = text.sub(pattern, '').strip
-      [new_text, value]
-    end
-
-    # Extract inline: keep in text without prefix
-    def self.extract_inline(text, pattern)
-      match = text.match(pattern)
-      return [text, nil] unless match
-
-      value = yield(match[0])
-      without_prefix = match[0].delete('@+')
-      new_text = text.sub(match[0], without_prefix)
       [new_text, value]
     end
 

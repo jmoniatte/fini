@@ -37,15 +37,15 @@ RSpec.describe Log::MessageParser do
     end
 
     context 'with duration not at end' do
-      it 'parses @2h at beginning and keeps in text without @' do
+      it 'parses @2h at beginning' do
         result = described_class.parse('@2h working on project')
-        expect(result[:text]).to eq('2h working on project')
+        expect(result[:text]).to eq('working on project')
         expect(result[:duration]).to eq(120)
       end
 
-      it 'parses @2h in middle and keeps in text without @' do
+      it 'parses @2h in middle' do
         result = described_class.parse('worked for @2h on project')
-        expect(result[:text]).to eq('worked for 2h on project')
+        expect(result[:text]).to eq('worked for on project')
         expect(result[:duration]).to eq(120)
       end
     end
@@ -56,89 +56,62 @@ RSpec.describe Log::MessageParser do
         expect(result[:text]).to eq('implementing feature')
         expect(result[:action]).to eq('coding')
       end
-
-      it 'parses +review and removes from text' do
-        result = described_class.parse('pull request +review')
-        expect(result[:text]).to eq('pull request')
-        expect(result[:action]).to eq('review')
-      end
     end
 
     context 'with action not at end' do
       it 'parses +review at beginning and keeps in text without +' do
         result = described_class.parse('+review pull request')
-        expect(result[:text]).to eq('review pull request')
+        expect(result[:text]).to eq('pull request')
         expect(result[:action]).to eq('review')
       end
     end
 
     context 'with context' do
-      it 'parses @backend at end and keeps in text' do
+      it 'parses @backend at end' do
         result = described_class.parse('working on feature @backend')
-        expect(result[:text]).to eq('working on feature backend')
+        expect(result[:text]).to eq('working on feature')
         expect(result[:context]).to eq('backend')
       end
 
-      it 'parses @frontend at end and keeps in text' do
-        result = described_class.parse('fixing bug @frontend')
-        expect(result[:text]).to eq('fixing bug frontend')
-        expect(result[:context]).to eq('frontend')
-      end
-
-      it 'parses context with hyphens and underscores and keeps in text' do
+      it 'parses context with hyphens and underscores' do
         result = described_class.parse('task @my-awesome_context')
-        expect(result[:text]).to eq('task my-awesome_context')
+        expect(result[:text]).to eq('task')
         expect(result[:context]).to eq('my-awesome_context')
       end
 
-      it 'parses @api at end and keeps in text' do
-        result = described_class.parse('refactoring endpoints @api')
-        expect(result[:text]).to eq('refactoring endpoints api')
-        expect(result[:context]).to eq('api')
-      end
-
-      it 'parses @api at beginning and keeps in text' do
+      it 'parses @context at beginning' do
         result = described_class.parse('@api refactoring endpoints')
-        expect(result[:text]).to eq('api refactoring endpoints')
+        expect(result[:text]).to eq('refactoring endpoints')
         expect(result[:context]).to eq('api')
       end
 
-      it 'parses @context in middle and keeps in text' do
-        result = described_class.parse('spent @2h on coding for @backend')
-        expect(result[:text]).to eq('spent 2h on coding for backend')
+      it 'parses @context in middle' do
+        result = described_class.parse('spent @backend time on coding')
+        expect(result[:text]).to eq('spent time on coding')
         expect(result[:context]).to eq('backend')
-        expect(result[:duration]).to eq(120)
       end
     end
 
     context 'with all metadata at end' do
-      it 'parses all metadata, keeps context and non-end action in text' do
+      it 'parses all metadata' do
         result = described_class.parse('on auth system +coding @backend @2h')
-        expect(result[:text]).to eq('on auth system coding backend')
+        expect(result[:text]).to eq('on auth system')
         expect(result[:action]).to eq('coding')
         expect(result[:context]).to eq('backend')
         expect(result[:duration]).to eq(120)
       end
 
-      it 'parses multiple orderings, keeps context and non-end action in text' do
+      it 'parses multiple orderings' do
         result = described_class.parse('code changes +review @frontend @1h30')
-        expect(result[:text]).to eq('code changes review frontend')
+        expect(result[:text]).to eq('code changes')
         expect(result[:action]).to eq('review')
         expect(result[:context]).to eq('frontend')
         expect(result[:duration]).to eq(90)
       end
 
-      it 'parses all metadata, keeps context and non-end action in text' do
-        result = described_class.parse('daily standup +meeting @team @15m')
-        expect(result[:text]).to eq('daily standup meeting team')
-        expect(result[:action]).to eq('meeting')
-        expect(result[:context]).to eq('team')
-        expect(result[:duration]).to eq(15)
-      end
-
-      it 'parses with action at end (duration not at end, kept)' do
+      it 'parses with action at end' do
         result = described_class.parse('daily standup @team @15m +meeting')
-        expect(result[:text]).to eq('daily standup team 15m')
+        expect(result[:text]).to eq('daily standup')
         expect(result[:action]).to eq('meeting')
         expect(result[:context]).to eq('team')
         expect(result[:duration]).to eq(15)
@@ -146,7 +119,7 @@ RSpec.describe Log::MessageParser do
 
       it 'parses with duration and action both truly at end' do
         result = described_class.parse('daily standup @team +meeting @15m')
-        expect(result[:text]).to eq('daily standup team')
+        expect(result[:text]).to eq('daily standup')
         expect(result[:action]).to eq('meeting')
         expect(result[:context]).to eq('team')
         expect(result[:duration]).to eq(15)
@@ -154,9 +127,9 @@ RSpec.describe Log::MessageParser do
     end
 
     context 'with metadata scattered throughout' do
-      it 'extracts values but keeps in text without prefix' do
-        result = described_class.parse('worked for @2h on +coding the @backend system')
-        expect(result[:text]).to eq('worked for 2h on coding the backend system')
+      it 'extracts values' do
+        result = described_class.parse('worked @2h +coding the @backend system')
+        expect(result[:text]).to eq('worked the system')
         expect(result[:action]).to eq('coding')
         expect(result[:context]).to eq('backend')
         expect(result[:duration]).to eq(120)
@@ -164,9 +137,9 @@ RSpec.describe Log::MessageParser do
     end
 
     context 'with mixed positions' do
-      it 'extracts metadata, keeps context in text' do
-        result = described_class.parse('+coding on @backend task @2h')
-        expect(result[:text]).to eq('coding on backend task')
+      it 'extracts metadata' do
+        result = described_class.parse('+coding @backend task @2h')
+        expect(result[:text]).to eq('task')
         expect(result[:action]).to eq('coding')
         expect(result[:context]).to eq('backend')
         expect(result[:duration]).to eq(120)
@@ -176,7 +149,7 @@ RSpec.describe Log::MessageParser do
     context 'with partial metadata' do
       it 'handles missing action' do
         result = described_class.parse('working on feature @backend @2h')
-        expect(result[:text]).to eq('working on feature backend')
+        expect(result[:text]).to eq('working on feature')
         expect(result[:context]).to eq('backend')
         expect(result[:duration]).to eq(120)
       end
@@ -188,17 +161,9 @@ RSpec.describe Log::MessageParser do
         expect(result[:duration]).to eq(60)
       end
 
-      it 'handles missing duration (action not at end, kept in text)' do
+      it 'handles missing duration' do
         result = described_class.parse('issue +debugging @backend')
-        expect(result[:text]).to eq('issue debugging backend')
-        expect(result[:action]).to eq('debugging')
-        expect(result[:context]).to eq('backend')
-        expect(result[:duration]).to be_nil
-      end
-
-      it 'handles missing duration with action at end' do
-        result = described_class.parse('issue @backend +debugging')
-        expect(result[:text]).to eq('issue backend')
+        expect(result[:text]).to eq('issue')
         expect(result[:action]).to eq('debugging')
         expect(result[:context]).to eq('backend')
         expect(result[:duration]).to be_nil
