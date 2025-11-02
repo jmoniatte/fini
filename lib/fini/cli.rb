@@ -33,6 +33,7 @@ module Fini
       # Load models and handlers now that we have a database connection
       require_relative 'models/log'
       require_relative 'handlers/log_handler'
+      require_relative 'handlers/import_handler'
 
       execute_command
     end
@@ -61,6 +62,10 @@ module Fini
 
         opts.on("-h", "--help", "Show this help message") do
           @mode = :help
+        end
+
+        opts.on("--import", "Runs a one time import from rlog data") do
+          @mode = :import
         end
 
         opts.on("--reset", "Reset the database (deletes all data)") do
@@ -112,6 +117,8 @@ module Fini
         edit_command
       when :view
         view_command
+      when :import
+        import_command
       when :default
         default_command
       end
@@ -151,6 +158,13 @@ module Fini
       else
         puts "Database reset cancelled".yellow
       end
+    end
+
+    def import_command
+      file_path = "/home/jean/jmoniatte/files/notes/_scratch/rwgps_log.md"
+      puts "Import data from #{file_path}"
+      log_count = Fini::ImportHandler.process_file(file_path)
+      puts "Created #{log_count} logs"
     end
   end
 end
