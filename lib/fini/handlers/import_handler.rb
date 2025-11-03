@@ -2,7 +2,7 @@ module Fini
   class ImportHandler
     # Temp dev to import data from rlog file
     def self.process_file(file_path)
-      counter = 0
+      logs = []
       log_date = nil
       File.foreach(file_path) do |line|
         next if line.strip.empty?
@@ -21,15 +21,24 @@ module Fini
         end
         next unless log_time && log_message
 
-        Log.create_from_message(
-          log_message,
-          DateTime.parse("#{log_date} #{log_time}")
-        )
-        counter += 1
+        logs << {
+          message: log_message,
+          logged_at: DateTime.parse("#{log_date} #{log_time}")
+        }
         print "."
       end
       print "\n"
-      counter
+
+      puts "Creating #{logs.size} database records"
+
+      logs.sort_by { |log| log[:logged_at] }.each do |log|
+        Log.create_from_message(
+          log[:message],
+          log[:logged_at]
+        )
+        print "."
+      end
+      logs.size
     end
   end
 end
