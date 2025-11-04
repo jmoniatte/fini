@@ -1,3 +1,7 @@
+require_relative '../presenters/log/terminal_presenter'
+require_relative '../presenters/log/markdown_presenter'
+require_relative '../parsers/log/markdown_parser'
+
 module Fini
   class LogHandler
     # Creates a log from a message string
@@ -12,39 +16,10 @@ module Fini
       end_date ||= start_date
       start_date, end_date = end_date, start_date if start_date < end_date
 
-      start_date.downto(end_date).each do |day|
-        range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
-        logs = Log.where(logged_at: range)
+      range = (end_date.to_time)..(start_date.to_time + (24 * 60 * 60) - 1)
+      logs = Log.where(logged_at: range).order(:logged_at).all
 
-        # Skip days with no entries
-        next if logs.empty?
-
-        day_duration = logs.map(&:duration).compact.sum
-
-        puts [
-          "#{day} - #{day.strftime('%A')}".red,
-          Utilities.duration_string(day_duration).cyan
-        ].join(" ")
-
-        logs.each do |log|
-          parts = [
-            "*",
-            log.logged_at.strftime("%H:%M"),
-            "-",
-            log.text.bold
-          ]
-          parts << Utilities.duration_string(log.duration).cyan unless log.duration.nil?
-          meta_parts = []
-          meta_parts << "+#{log.action}" unless log.action.nil?
-          meta_parts << "@#{log.context}" unless log.context.nil?
-          unless meta_parts.empty?
-            meta_string = "[#{meta_parts.join(' ')}]"
-            parts << meta_string.grey.italic
-          end
-          puts parts.compact.join(" ")
-        end
-        puts ""
-      end
+      Presenters::Log::TerminalPresenter.render(logs)
     end
 
     def self.edit_days(start_date, end_date = nil)
@@ -53,65 +28,27 @@ module Fini
       end_date ||= start_date
       start_date, end_date = end_date, start_date if start_date < end_date
 
+      # Fetch logs for the date range
+      range = (end_date.to_time)..(start_date.to_time + (24 * 60 * 60) - 1)
+      logs = Log.where(logged_at: range).order(:logged_at).all
+
+      # Generate markdown content
       tempfile = Tempfile.new(['fini-edit-', '.md'])
-
-      # Generate sections for each day (newest first)
-      start_date.downto(end_date).each do |day|
-        range = day.to_time...(day.to_time + (24 * 60 * 60) - 1)
-        logs = Log.where(logged_at: range).order(:logged_at)
-
-        tempfile.puts "# #{day} - #{day.strftime('%A')}"
-        logs.each do |log|
-          parts = [
-            "*",
-            log.logged_at.strftime("%H:%M"),
-            "-",
-            log.message
-          ]
-          tempfile.puts parts.join(" ")
-        end
-        tempfile.puts "" # Empty line between days
-      end
-
+      tempfile.write(Presenters::Log::MarkdownPresenter.render(logs))
       tempfile.close
 
       # Open in editor
       editor = ENV['EDITOR'] || 'vim'
       system("#{editor} #{tempfile.path}")
 
-      # Read back and update logs
-      updated_lines = File.readlines(tempfile.path).reject { |line| line.strip.empty? }
+      # Parse edited content
+      content = File.read(tempfile.path)
+      parsed = Parsers::Log::MarkdownParser.parse(content)
 
-      log_date = nil
+      return if parsed[:dates].empty?
 
-      # file_dates for database records to delete
-      # new_logs for the logs to create
-      file_dates = []
-      new_lines = []
-      updated_lines.each do |line|
-        if (match = line.match(/^# (\d{4}-\d{2}-\d{2})/))
-          log_date = match[1]
-          file_dates << log_date
-          next
-        end
-        next if log_date.nil?
-
-        if (match = line.match(/^\* (\d{2}:\d{2}) - (.+)$/))
-          log_time = match[1]
-          log_message = match[2]
-        end
-        next unless log_time && log_message
-
-        logged_at = DateTime.parse("#{log_date} #{log_time}")
-        new_lines << {
-          logged_at: logged_at,
-          message: log_message
-        }
-      end
-
-      return if file_dates.empty?
-
-      file_dates.each do |file_date|
+      # Delete logs for dates that were in the file
+      parsed[:dates].each do |file_date|
         # Delete all database records for that day
         date = Date.parse(file_date)
         range = date.to_time...(date.to_time + (24 * 60 * 60))
@@ -119,8 +56,8 @@ module Fini
       end
 
       # Create new logs from edited content
-      new_lines.each do |line|
-        Log.create_from_message(line[:message], line[:logged_at])
+      parsed[:entries].each do |entry|
+        Log.create_from_message(entry[:message], entry[:logged_at])
       end
 
       tempfile.unlink
