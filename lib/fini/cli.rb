@@ -64,12 +64,16 @@ module Fini
           @mode = :help
         end
 
-        opts.on("--import", "Runs a one time import from rlog data") do
-          @mode = :import
-        end
-
         opts.on("--reset", "Reset the database (deletes all data)") do
           @mode = :reset
+        end
+
+        opts.on("--reprocess", "Reprocess all messages into text, action, context and duration") do
+          @mode = :reprocess
+        end
+
+        opts.on("--import", "Runs a one time import from rlog data") do
+          @mode = :import
         end
 
         opts.separator ""
@@ -107,7 +111,7 @@ module Fini
     end
 
     def execute_command
-      system("clear") unless @mode == :help
+      system("clear") unless %i[help reprocess].include?(@mode)
       case @mode
       when :help
         puts create_option_parser.help
@@ -119,6 +123,8 @@ module Fini
         view_command
       when :import
         import_command
+      when :reprocess
+        reprocess_command
       when :default
         default_command
       end
@@ -158,6 +164,11 @@ module Fini
       else
         puts "Database reset cancelled".yellow
       end
+    end
+
+    def reprocess_command
+      Fini::LogHandler.reprocess
+      puts "Reprocessed all logs"
     end
 
     def import_command

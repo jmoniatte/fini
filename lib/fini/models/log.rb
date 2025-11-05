@@ -15,6 +15,16 @@ class Log < Sequel::Model
     )
   end
 
+  def reprocess
+    parsed = Log::MessageParser.parse(message)
+    update(
+      text: parsed[:text],
+      action: parsed[:action],
+      context: parsed[:context],
+      duration: parsed[:duration]
+    )
+  end
+
   def to_s
     text
   end

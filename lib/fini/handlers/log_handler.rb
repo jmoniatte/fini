@@ -70,5 +70,9 @@ module Fini
         puts "✓ Logs updated for #{end_date} to #{start_date}".green
       end
     end
+
+    def self.reprocess
+      Log.all.each(&:reprocess)
+    end
   end
 end
